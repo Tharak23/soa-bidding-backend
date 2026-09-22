@@ -1,0 +1,22 @@
+spring:
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: auctions
+              uri: lb://auction-service
+              predicates:
+                - Path=/api/auctions,/api/auctions/**
+            - id: bids
+              uri: lb://bidding-service
+              predicates:
+                - Path=/api/bids,/api/bids/**
+            - id: payments
+              uri: lb://payment-service
+              predicates:
+                - Path=/api/wallet,/api/wallet/**,/api/payments,/api/payments/**
+            - id: profile
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/me,/api/me/**
