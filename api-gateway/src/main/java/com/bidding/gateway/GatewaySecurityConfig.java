@@ -38,7 +38,9 @@ public class GatewaySecurityConfig {
 	@Bean
 	CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(List.of(corsOrigin.split(",")));
+		configuration.setAllowedOriginPatterns(List.of(
+				corsOrigin.split("\\s*,\\s*")));
+		configuration.addAllowedOriginPattern("https://*.trycloudflare.com");
 		configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(List.of("*"));
 		configuration.setAllowCredentials(true);
