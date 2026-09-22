@@ -62,7 +62,7 @@ create table public.ledger_entries (
   entry_type text not null check (entry_type in ('top_up', 'hold', 'release', 'capture')),
   amount_cents bigint not null check (amount_cents > 0),
   auction_id uuid references public.auctions(id),
-  bid_id uuid references public.bids(id),
+  bid_id uuid,
   dodo_payment_id text,
   idempotency_key text not null unique,
   created_at timestamptz not null default now()

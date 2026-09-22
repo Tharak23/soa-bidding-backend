@@ -1,10 +1,12 @@
 package com.bidding.biddingservice.service;
 
 import java.util.List;
-import java.util.UUID;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.bidding.biddingservice.client.AuctionClient;
 import com.bidding.biddingservice.client.HoldRequest;
@@ -25,22 +27,29 @@ public class BiddingService {
 	private final BidRepository bids;
 	private final AuctionClient auctions;
 	private final PaymentClient payments;
+	private final TransactionTemplate tx;
 
-	public BiddingService(BidRepository bids, AuctionClient auctions, PaymentClient payments) {
+	public BiddingService(
+			BidRepository bids,
+			AuctionClient auctions,
+			PaymentClient payments,
+			PlatformTransactionManager transactionManager) {
 		this.bids = bids;
 		this.auctions = auctions;
 		this.payments = payments;
+		this.tx = new TransactionTemplate(transactionManager);
 	}
 
-	@Transactional
 	public BidResponse place(PlaceBidRequest request) {
 		String bidder = CurrentUser.clerkUserId();
-		Bid bid = new Bid();
-		bid.setAuctionId(request.auctionId());
-		bid.setBidderClerkUserId(bidder);
-		bid.setAmountCents(request.amountCents());
-		bid.setStatus("rejected");
-		bid = bids.saveAndFlush(bid);
+		Bid bid = Objects.requireNonNull(tx.execute(status -> {
+			Bid created = new Bid();
+			created.setAuctionId(request.auctionId());
+			created.setBidderClerkUserId(bidder);
+			created.setAmountCents(request.amountCents());
+			created.setStatus("rejected");
+			return bids.saveAndFlush(created);
+		}));
 
 		payments.hold(new HoldRequest(
 				bidder,
@@ -49,16 +58,25 @@ public class BiddingService {
 				bid.getId(),
 				"hold:" + bid.getId()));
 
-		LeadingBidResponse result = auctions.leadingBid(
-				request.auctionId(),
-				new LeadingBidRequest(bidder, request.amountCents(), bid.getId()));
+		LeadingBidResponse result;
+		try {
+			result = auctions.leadingBid(
+					request.auctionId(),
+					new LeadingBidRequest(bidder, request.amountCents(), bid.getId()));
+		} catch (RuntimeException ex) {
+			payments.release(new ReleaseRequest(bidder, request.auctionId(), bid.getId(), "release:" + bid.getId()));
+			throw ex;
+		}
 		if (!result.accepted()) {
 			payments.release(new ReleaseRequest(bidder, request.auctionId(), bid.getId(), "release:" + bid.getId()));
 			throw ApiException.conflict(result.code(), result.message());
 		}
 
-		bid.setStatus("accepted");
-		bids.save(bid);
+		Bid accepted = Objects.requireNonNull(tx.execute(status -> {
+			Bid current = bids.findById(bid.getId()).orElseThrow();
+			current.setStatus("accepted");
+			return bids.save(current);
+		}));
 
 		if (result.previousBidId() != null && result.previousBidderId() != null) {
 			payments.release(new ReleaseRequest(
@@ -67,7 +85,7 @@ public class BiddingService {
 					result.previousBidId(),
 					"release:" + result.previousBidId()));
 		}
-		return BidResponse.from(bid);
+		return BidResponse.from(accepted);
 	}
 
 	@Transactional(readOnly = true)
