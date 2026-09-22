@@ -31,7 +31,7 @@ public class Wallet {
 	private long heldBalanceCents;
 
 	@Column(nullable = false)
-	private String currency = "USD";
+	private String currency = "INR";
 
 	@Version
 	private long version;

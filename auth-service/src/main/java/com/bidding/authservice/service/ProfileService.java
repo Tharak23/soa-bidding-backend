@@ -45,9 +45,18 @@ public class ProfileService {
 		return profiles.findByClerkUserId(clerkUserId).orElseGet(() -> {
 			Profile created = new Profile();
 			created.setClerkUserId(clerkUserId);
-			created.setEmail(CurrentUser.email());
-			created.setDisplayName(CurrentUser.displayName());
-			created.setOnboarded(false);
+			String email = CurrentUser.email();
+			created.setEmail(email != null ? email : "");
+			String name = CurrentUser.displayName();
+			if (name == null || name.isBlank()) {
+				if (email != null && email.contains("@")) {
+					name = email.substring(0, email.indexOf('@'));
+				} else {
+					name = "Bidder-" + (clerkUserId.length() > 6 ? clerkUserId.substring(clerkUserId.length() - 6) : clerkUserId);
+				}
+			}
+			created.setDisplayName(name);
+			created.setOnboarded(true);
 			try {
 				return profiles.saveAndFlush(created);
 			} catch (DataIntegrityViolationException duplicate) {

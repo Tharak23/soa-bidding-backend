@@ -36,22 +36,22 @@ public class AuctionSeed implements ApplicationRunner {
 		List<Auction> lots = List.of(
 				lot("Leica M6 body", "Mechanical 35mm rangefinder, meter works, light brassing on the top plate.",
 						"https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1400&q=80",
-						"Cameras", "Used - Good", "Berlin", 85000, 2500, now.plus(6, ChronoUnit.HOURS)),
+						"Cameras", "Used - Good", "Berlin", 8500000L, 250000L, now.plus(6, ChronoUnit.HOURS)),
 				lot("Rolex Submariner 16610", "1999 two-liner, box and papers, service papers from 2022.",
 						"https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&w=1400&q=80",
-						"Watches", "Used - Excellent", "Geneva", 720000, 10000, now.plus(1, ChronoUnit.DAYS)),
+						"Watches", "Used - Excellent", "Geneva", 72000000L, 1000000L, now.plus(1, ChronoUnit.DAYS)),
 				lot("Fender Stratocaster 1964", "Sunburst slab-board, original pickups, professionally set up.",
 						"https://images.unsplash.com/photo-1510915361894-dbf53f4d349b?auto=format&fit=crop&w=1400&q=80",
-						"Instruments", "Used - Good", "Nashville", 185000, 5000, now.plus(2, ChronoUnit.DAYS)),
+						"Instruments", "Used - Good", "Nashville", 18500000L, 500000L, now.plus(2, ChronoUnit.DAYS)),
 				lot("Dune first edition", "1965 Chilton, first issue dust jacket, no remainder mark.",
 						"https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=1400&q=80",
-						"Books", "Used - Very Good", "London", 42000, 1000, now.plus(12, ChronoUnit.HOURS)),
+						"Books", "Used - Very Good", "London", 4200000L, 100000L, now.plus(12, ChronoUnit.HOURS)),
 				lot("Nike Dunk Low 1985", "Original high-top pairing, size US 9, stored boxed.",
 						"https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1400&q=80",
-						"Sneakers", "Used - Fair", "Tokyo", 15000, 500, now.plus(3, ChronoUnit.DAYS)),
+						"Sneakers", "Used - Fair", "Tokyo", 1500000L, 50000L, now.plus(3, ChronoUnit.DAYS)),
 				lot("Eames lounge chair", "670/671, walnut and black leather, recent webbing.",
 						"https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1400&q=80",
-						"Furniture", "Used - Excellent", "Los Angeles", 95000, 2500, now.plus(5, ChronoUnit.DAYS)));
+						"Furniture", "Used - Excellent", "Los Angeles", 9500000L, 250000L, now.plus(5, ChronoUnit.DAYS)));
 		auctions.saveAll(lots);
 	}
 

@@ -39,7 +39,7 @@ public class Payment {
 	private long amountCents;
 
 	@Column(nullable = false)
-	private String currency = "USD";
+	private String currency = "INR";
 
 	@Column(nullable = false)
 	private String status = "open";

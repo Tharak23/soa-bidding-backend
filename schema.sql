@@ -18,7 +18,7 @@ create table public.wallets (
   clerk_user_id text not null unique,
   available_balance_cents bigint not null default 0 check (available_balance_cents >= 0),
   held_balance_cents bigint not null default 0 check (held_balance_cents >= 0),
-  currency text not null default 'USD',
+  currency text not null default 'INR',
   version bigint not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -75,7 +75,7 @@ create table public.payments (
   dodo_checkout_session_id text,
   product_id text not null default 'pdt_0No8GYiVeUpU21JfBYefp',
   amount_cents bigint not null default 0,
-  currency text not null default 'USD',
+  currency text not null default 'INR',
   status text not null default 'open' check (status in ('open', 'succeeded', 'failed')),
   purpose text not null default 'wallet_top_up',
   metadata jsonb not null default '{}'::jsonb,

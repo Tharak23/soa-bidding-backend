@@ -1,93 +1,125 @@
 # BidVelocity backend
 
+Spring Boot microservices: Eureka, API gateway, auth, auctions, bidding, payments. Amounts are **INR**, stored as integer paise.
+
+Repo: https://github.com/Tharak23/soa-bidding-backend
+
+---
+
+## What you need
+
+- **Java 17 or 21** (`java -version`)
+- **Python 3** (`python3 --version`) — used by `start-all.sh`
+- A filled **`.env`** next to `start-all.sh` (copy from `.env.example`)
+- Free ports **8761, 8080, 8081, 8082, 8083, 8084**
+
+Maven Wrapper is included (`./mvnw`). No Docker for the default shared-Supabase setup.
+
+---
+
+## Env file
+
 ```bash
-./mvnw -DskipTests package
-
-set -a && source .env && set +a
-java -jar eureka-server/target/eureka-server-0.0.1-SNAPSHOT.jar          # http://localhost:8761
-
-set -a && source .env && set +a
-java -jar api-gateway/target/api-gateway-0.0.1-SNAPSHOT.jar              # http://localhost:8080
-
-set -a && source .env && set +a
-java -jar auth-service/target/auth-service-0.0.1-SNAPSHOT.jar            # http://localhost:8081
-
-set -a && source .env && set +a
-java -jar auction-service/target/auction-service-0.0.1-SNAPSHOT.jar      # http://localhost:8082
-
-set -a && source .env && set +a
-java -jar bidding-service/target/bidding-service-0.0.1-SNAPSHOT.jar      # http://localhost:8083
-
-set -a && source .env && set +a
-SERVER_PORT=8085 java -jar bidding-service/target/bidding-service-0.0.1-SNAPSHOT.jar  # http://localhost:8085
-
-set -a && source .env && set +a
-java -jar payment-service/target/payment-service-0.0.1-SNAPSHOT.jar      # http://localhost:8084
+cp .env.example .env
 ```
 
-## Postman
+Required in `.env`:
 
-Base URL: `http://localhost:8080`
+```
+SUPABASE_DB_URL=jdbc:postgresql://...:5432/postgres?sslmode=require
+SUPABASE_DB_USERNAME=
+SUPABASE_DB_PASSWORD=
+CLERK_ISSUER=https://....clerk.accounts.dev
+CLERK_JWKS_URL=https://....clerk.accounts.dev/.well-known/jwks.json
+INTERNAL_SERVICE_TOKEN=dev-internal-token
+CORS_ORIGIN=http://localhost:3000
+EUREKA_URL=http://localhost:8761/eureka/
+```
 
-Get a token: sign in at `http://localhost:3000`, console:
+Optional (wallet top-up via Dodo):
+
+```
+DODO_PAYMENTS_API_KEY=
+DODO_PAYMENTS_WEBHOOK_KEY=
+DODO_PAYMENTS_BASE_URL=https://test.dodopayments.com
+DODO_PRODUCT_ID=
+DODO_RETURN_URL=http://localhost:3000/wallet
+```
+
+Do not commit `.env`.
+
+---
+
+## Start everything
+
+```bash
+chmod +x start-all.sh stop-all.sh
+./start-all.sh
+```
+
+The script builds JARs if needed, then starts:
+
+| Service | URL |
+| --- | --- |
+| Eureka | http://localhost:8761 |
+| Auth | http://localhost:8081 |
+| Auction | http://localhost:8082 |
+| Bidding | http://localhost:8083 |
+| Payment | http://localhost:8084 |
+| API gateway | http://localhost:8080 |
+
+Check lots:
+
+```bash
+curl http://localhost:8080/api/auctions
+```
+
+Logs: `logs/*.log`
+
+Stop:
+
+```bash
+./stop-all.sh
+```
+
+---
+
+## Manual start (optional)
+
+```bash
+./mvnw -DskipTests package
+set -a && source .env && set +a
+java -jar eureka-server/target/eureka-server-0.0.1-SNAPSHOT.jar
+java -jar auth-service/target/auth-service-0.0.1-SNAPSHOT.jar
+java -jar auction-service/target/auction-service-0.0.1-SNAPSHOT.jar
+java -jar bidding-service/target/bidding-service-0.0.1-SNAPSHOT.jar
+java -jar payment-service/target/payment-service-0.0.1-SNAPSHOT.jar
+java -jar api-gateway/target/api-gateway-0.0.1-SNAPSHOT.jar
+```
+
+---
+
+## API smoke test
+
+Base: `http://localhost:8080`
+
+Public:
+
+```
+GET /api/auctions
+GET /api/auctions/<id>
+```
+
+Authenticated — sign in on the frontend, then in the browser console:
 
 ```js
 await window.Clerk.session.getToken()
 ```
 
-Postman → Authorization → Bearer Token → paste it. Use this token on every request except step 1 and 2.
+Use `Authorization: Bearer <token>` for `/api/me`, `/api/wallet`, `POST /api/bids`, `POST /api/auctions`.
 
-### 1. List lots (no token)
-
-`GET` `http://localhost:8080/api/auctions`
-
-Expected: `200` and a JSON array of open lots (seeded items like Leica, Rolex, Strat). Copy one `id`.
-
-### 2. Open one lot (no token)
-
-`GET` `http://localhost:8080/api/auctions/PASTE_ID`
-
-Expected: `200` with that lot’s `title`, `currentPriceCents`, `status: "OPEN"`.
-
-### 3. Who am I
-
-`GET` `http://localhost:8080/api/me`
-
-Expected: `200` with `clerkUserId`, `email`, `onboarded`. No token → `401`.
-
-### 4. Wallet
-
-`GET` `http://localhost:8080/api/wallet`
-
-Expected: `200` with `availableBalanceCents`, `heldBalanceCents`, `currency`.
-
-### 5. Bid
-
-`POST` `http://localhost:8080/api/bids`
+Bid body (amount in paise, so ₹85,000 = `8500000`):
 
 ```json
-{
-  "auctionId": "PASTE_ID",
-  "amountCents": 85000
-}
+{ "auctionId": "<AUCTION_ID>", "amountCents": 8500000 }
 ```
-
-Expected: `200` with `status: "accepted"` and your `amountCents`. Then `GET` wallet again: available goes down, held goes up.
-
-Too-low bid or not enough wallet → `409`.
-
-### 6. Create a lot
-
-`POST` `http://localhost:8080/api/auctions`
-
-```json
-{
-  "title": "Test lot",
-  "description": "Postman",
-  "startPriceCents": 1000,
-  "minIncrementCents": 100,
-  "endsAt": "2026-09-23T12:00:00Z"
-}
-```
-
-Expected: `200` with a new `id`, `status: "OPEN"`, `currentPriceCents: 1000`.
