@@ -9,17 +9,23 @@ BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 LOGS_DIR = os.path.join(BACKEND_DIR, "logs")
 PID_FILE = os.path.join(BACKEND_DIR, ".pids")
 ENV_FILE = os.path.join(BACKEND_DIR, ".env")
+ENV_LOCAL_FILE = os.path.join(BACKEND_DIR, ".env.local")
 
 os.makedirs(LOGS_DIR, exist_ok=True)
 
-# Load .env from this directory
+# Load .env / .env.local from this directory (same keys start-all.sh always used)
 env = os.environ.copy()
-if not os.path.exists(ENV_FILE):
-    print("Error: .env not found.")
+loaded = None
+for candidate in (ENV_FILE, ENV_LOCAL_FILE):
+    if os.path.exists(candidate):
+        loaded = candidate
+        break
+if loaded is None:
+    print("Error: .env or .env.local not found.")
     print("Copy .env.example to .env and fill in Clerk + Supabase values.")
     sys.exit(1)
 
-with open(ENV_FILE, "r") as f:
+with open(loaded, "r") as f:
     for line in f:
         line = line.strip()
         if line and not line.startswith("#") and "=" in line:

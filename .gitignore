@@ -1,6 +1,10 @@
 target/
 .idea/
 *.class
+.project
+.classpath
+.settings/
+*.log
 .env
 .env.local
 .DS_Store
